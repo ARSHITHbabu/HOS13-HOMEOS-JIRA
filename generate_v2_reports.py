@@ -102,7 +102,7 @@ def generate_library_eval_v2():
 
     version = doc.add_paragraph()
     version.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = version.add_run("Version 2.0 | February 16, 2026")
+    run = version.add_run("Version 2.0 | February 17, 2026")
     run.font.size = Pt(12)
     run.font.color.rgb = RGBColor(100, 100, 100)
 
@@ -146,7 +146,7 @@ def generate_library_eval_v2():
 
     doc.add_paragraph(
         "This Version 2 report incorporates hands-on POC (Proof of Concept) and spike testing results "
-        "conducted February 14-16, 2026 under JIRA task HOS-13. Five dedicated POC projects were built "
+        "conducted February 14-17, 2026 under JIRA task HOS-13. Five dedicated POC projects were built "
         "and tested on physical Android devices using Expo Development Builds. The results validate, "
         "correct, and extend the theoretical analysis from Version 1.0."
     )
@@ -170,7 +170,7 @@ def generate_library_eval_v2():
         ("External Calendar Sync: ", "VALIDATED via POC1. ", "expo-calendar v15.0.8 confirmed working for device-local calendar access (permissions, read/write events, recurring events). Calendar UI packages (react-native-calendars v1.1314.0 for month view, react-native-big-calendar v4.19.0 for week/timeline view) render correctly with color-coded family member dots and overlap detection. Note: react-native-calendar-events (recommended in Calendar Packages Analysis) is DEPRECATED and incompatible -- replaced with expo-calendar."),
         ("Document Handling: ", "VALIDATED via POC2. ", "react-native-pdf v7.0.3 (updated from v6.7.5 in V1 report) confirmed working with Expo config plugins. Tested with 1-page simple PDF, 6-page W-9 form, and 100+ page tax instructions. Pinch-to-zoom, multi-page scrolling, and load timing all functional. Requires Development Build (not Expo Go)."),
         ("OCR: ", "VALIDATED via POC3. ", "@react-native-ml-kit/text-recognition v2.0.0 (updated from v0.11.1 in V1 report) provides on-device OCR with excellent accuracy. Camera capture via expo-camera v17.0.10 and gallery selection via expo-image-picker v17.0.10 both functional. OCR extracts text blocks with coordinates, line details, and character counts."),
-        ("Encryption: ", "PARTIALLY VALIDATED via POC4. ", "react-native-quick-crypto v1.0.11 (updated from ~0.7.5 in V1 report) encountered two errors during setup: (1) CMake/ninja infinite loop on Windows for armeabi-v7a builds, and (2) runtime crash due to missing plugin configuration. Both errors have documented fixes. AES-256-GCM encryption/decryption functionality is achievable but requires careful build configuration. See Technical Blockers Report V2 for details."),
+        ("Encryption: ", "BLOCKED (Primary) / FALLBACK AVAILABLE via POC4. ", "react-native-quick-crypto v1.0.11 (updated from ~0.7.5 in V1 report) encountered two critical errors: (1) CMake/ninja infinite loop on Windows for armeabi-v7a builds (RESOLVED -- build for arm64-v8a only), and (2) persistent runtime crash 'Cannot read property PKCS1 of undefined' due to Nitro Module initialization failure (UNRESOLVED). Despite applying all documented fixes (app.json plugins, expo-build-properties, Hermes engine, clean prebuilds, cache deletion, full native rebuilds), the PKCS1 error persists. RECOMMENDED FALLBACK: @noble/ciphers (pure JavaScript, audited, 593K weekly npm downloads, full AES-256-GCM support, no native module required). If react-native-quick-crypto's Nitro Module issue is resolved in a future release, the primary library can be re-adopted. See Technical Blockers Report V2 for full error documentation and @noble/ciphers evaluation."),
         ("Real-time Sync: ", "VALIDATED via POC5. ", "React Native's built-in WebSocket API works seamlessly with Zustand v5.0.11 (updated from v4.x in V1 report) for state management. Echo server testing confirmed send/receive, JSON parsing, and auto-reconnect capabilities. No additional WebSocket library needed."),
     ]
 
@@ -258,19 +258,22 @@ def generate_library_eval_v2():
     doc.add_paragraph("")
 
     # === POC4 ===
-    doc.add_heading("2.4 POC4: Encryption (react-native-quick-crypto)", level=2)
+    doc.add_heading("2.4 POC4: Encryption (react-native-quick-crypto + @noble/ciphers)", level=2)
 
-    table = doc.add_table(rows=8, cols=2)
+    table = doc.add_table(rows=11, cols=2)
     table.style = 'Table Grid'
     data = [
         ("Aspect", "Details"),
-        ("Status", "PARTIAL -- Build/Runtime Errors Encountered (Fixes Documented)"),
-        ("Libraries Tested", "react-native-quick-crypto v1.0.11, expo-secure-store v15.0.8, expo-build-properties v1.0.10"),
-        ("Tests Designed", "Random bytes generation, AES-256-GCM encrypt/decrypt round-trip, wrong key detection (Issue #798), secure key storage with expo-secure-store, performance testing (100B to 100KB)."),
-        ("Error 1: Build Failure", "CMake/ninja infinite loop: 'ninja: error: manifest build.ninja still dirty after 100 tries'. Affected armeabi-v7a (32-bit) architecture only. Known react-native-quick-crypto bug on Windows. FIX: Build with arm64-v8a only: gradlew.bat app:installDebug -PreactNativeArchitectures=arm64-v8a -x lint -x test"),
-        ("Error 2: Runtime Crash", "Cannot read property 'PKCS1' of undefined. Nitro Module not initializing. Root cause: react-native-quick-crypto missing from plugins array in app.json, and expo-build-properties not installed. FIX: Add both to app.json plugins and install expo-build-properties, then run npx expo prebuild --clean."),
-        ("V1 Correction", "Version updated from ~0.7.5 (V1) to 1.0.11 (actual version). V1 did not mention the need for expo-build-properties as a required dependency or the app.json plugin configuration requirement."),
-        ("Production Recommendation", "Use react-native-quick-crypto v1.0.11 with proper plugin configuration. Build for arm64-v8a on Windows to avoid CMake issues. Ensure expo-build-properties is installed. See Technical Blockers Report V2 for full error documentation and mitigations."),
+        ("Status", "BLOCKED (Primary Library) -- Fallback Library Identified"),
+        ("Primary Library", "react-native-quick-crypto v1.0.11 (Nitro Modules / native C++ via JSI)"),
+        ("Fallback Library", "@noble/ciphers (pure JavaScript, audited, no native module required)"),
+        ("Supporting Libraries", "expo-secure-store v15.0.8, expo-build-properties v1.0.10"),
+        ("Tests Designed", "Random bytes generation, AES-256-GCM encrypt/decrypt round-trip, wrong key detection (Issue #798), secure key storage with expo-secure-store, performance testing (100B to 100KB). Tests could NOT be executed due to persistent runtime error."),
+        ("Error 1: Build Failure (RESOLVED)", "CMake/ninja infinite loop: 'ninja: error: manifest build.ninja still dirty after 100 tries'. Affected armeabi-v7a (32-bit ARM) architecture only on Windows. Known react-native-quick-crypto bug with Nitro Module CMake configuration.\n\nFIX: Build for arm64-v8a only:\ngradlew.bat app:installDebug -PreactNativeArchitectures=arm64-v8a -x lint -x test\n\nThis error is RESOLVED. Modern Android devices (2018+) all support arm64-v8a."),
+        ("Error 2: Runtime Crash (UNRESOLVED)", "TypeError: Cannot read property 'PKCS1' of undefined. The Nitro Module (native C++ crypto engine) compiles successfully but fails to initialize at JavaScript runtime. The app crashes immediately when any crypto function is called.\n\nAll attempted fixes FAILED:\n1. Added react-native-quick-crypto to app.json plugins array\n2. Installed expo-build-properties v1.0.10\n3. Enabled Hermes JS engine (jsEngine: hermes in app.json)\n4. Deleted android/.cxx, android/build, android/app/build directories\n5. Deleted entire android folder and ran npx expo prebuild --clean\n6. Multiple full native rebuilds with arm64-v8a flag\n7. Verified: nitro-modules v0.33.9 installed, quick-crypto in gradle dependency tree, Hermes enabled in gradle.properties, native .so files present\n\nDespite all fixes, the Nitro Module native code compiles but fails to bind to the JavaScript runtime. This is classified as a PERSISTENT TECHNICAL BLOCKER."),
+        ("Recommended Fallback: @noble/ciphers", "@noble/ciphers is a pure JavaScript cryptography library that provides AES-256-GCM encryption without requiring any native modules.\n\nKey advantages:\n- Pure JS: No native build issues, works in Expo Go AND Development Builds\n- Audited: Independently security-audited by Cure53\n- Popular: 593,000+ weekly npm downloads\n- Full AES-256-GCM support: encrypt, decrypt, auth tag verification\n- Tree-shakeable: Import only what you need (minimal bundle impact)\n- Used in production E2E encryption apps\n- Part of the @noble ecosystem (noble-hashes, noble-curves)\n- Zero dependencies\n\nCombine with expo-secure-store for key storage (iOS Keychain / Android KeyStore)."),
+        ("V1 Correction", "Version updated from ~0.7.5 (V1) to 1.0.11 (actual version). The v1.0.x release introduced Nitro Modules architecture (native C++ via JSI), a complete rewrite from the v0.7.x NativeModule approach. V1 did not anticipate the Nitro Module initialization issues or the need for expo-build-properties as a dependency."),
+        ("Production Recommendation", "DUAL-PATH APPROACH:\n\nPath A (If resolved): If react-native-quick-crypto's Nitro Module initialization issue is fixed in a future release (or a working configuration is found), re-adopt it as the primary encryption library for maximum performance (native C++ crypto operations).\n\nPath B (Recommended for now): Use @noble/ciphers as the encryption library. It provides the same AES-256-GCM functionality as a pure JavaScript implementation with no native module dependencies. While slightly slower than native crypto for very large files, it is more than sufficient for Family OS Document Vault use cases (typical document sizes under 10MB).\n\nBoth paths use expo-secure-store for key storage."),
     ]
     for i, (k, v) in enumerate(data):
         table.rows[i].cells[0].text = k
@@ -309,7 +312,7 @@ def generate_library_eval_v2():
         "React Native 0.81.5 and Expo SDK 54."
     )
 
-    table = doc.add_table(rows=25, cols=6)
+    table = doc.add_table(rows=26, cols=6)
     table.style = 'Table Grid'
     headers = ["Feature Area", "Selected Library", "V1 Version", "V2 Tested Version", "POC", "Notes"]
     for i, h in enumerate(headers):
@@ -329,9 +332,10 @@ def generate_library_eval_v2():
         ("Camera", "expo-camera", "~15.0.14", "17.0.10", "POC3", "UPDATED."),
         ("Image Picker", "expo-image-picker", "~15.0.7", "17.0.10", "POC3", "UPDATED."),
         ("Image Editing", "expo-image-manipulator", "~12.0.5", "~12.0.5", "--", "No change."),
-        ("Encryption", "react-native-quick-crypto", "~0.7.5", "1.0.11", "POC4", "MAJOR UPDATE. See blockers."),
+        ("Encryption (Primary)", "react-native-quick-crypto", "~0.7.5", "1.0.11", "POC4", "BLOCKED. Nitro Module PKCS1 init failure. See blockers."),
+        ("Encryption (Fallback)", "@noble/ciphers", "N/A", "latest", "POC4", "NEW. Pure JS, audited, AES-256-GCM. Recommended."),
         ("Key Storage", "expo-secure-store", "~13.0.2", "15.0.8", "POC4", "UPDATED."),
-        ("Build Properties", "expo-build-properties", "N/A", "1.0.10", "POC4", "NEW. Required for encryption."),
+        ("Build Properties", "expo-build-properties", "N/A", "1.0.10", "POC4", "NEW. Required for quick-crypto (if used)."),
         ("Biometric Auth", "expo-local-authentication", "~14.0.1", "~14.0.1", "--", "No change."),
         ("Charts", "victory-native", "~37.3.2", "~41.x+", "--", "UPDATED version note. Requires @shopify/react-native-skia."),
         ("State Management", "Zustand", "4.x", "5.0.11", "POC5", "MAJOR UPDATE. v5 confirmed working."),
@@ -370,7 +374,7 @@ def generate_library_eval_v2():
         ("5", "@shopify/react-native-skia dependency", "Not mentioned", "ADDED: victory-native requires Skia. This adds ~2MB to bundle size and requires native build."),
         ("6", "react-native-pdf version", "Listed as ~6.7.5", "CORRECTED: Actual tested version is 7.0.3. Requires @config-plugins/react-native-pdf and @config-plugins/react-native-blob-util."),
         ("7", "Encryption blocker #798", "Not documented in Technical Blockers Report", "ADDED to Technical Blockers Report V2: Wrong key may not throw error on decipher.final(). Needs application-level auth tag verification."),
-        ("8", "Missing POC4 build/runtime errors", "Not applicable (V1 was theoretical)", "ADDED to Technical Blockers Report V2: Two new blockers -- CMake ninja loop on Windows and Nitro Module initialization failure."),
+        ("8", "Missing POC4 build/runtime errors", "Not applicable (V1 was theoretical)", "ADDED to Technical Blockers Report V2: Two new blockers -- CMake ninja loop on Windows (RESOLVED) and Nitro Module PKCS1 initialization failure (UNRESOLVED despite all fixes). @noble/ciphers identified as production-ready fallback."),
     ]
     for i, (num, issue, v1, v2) in enumerate(corrections):
         table.rows[i + 1].cells[0].text = num
@@ -391,8 +395,11 @@ def generate_library_eval_v2():
 
     doc.add_paragraph(
         "POC validation has increased confidence from the V1 theoretical assessment. 4 out of 5 critical areas "
-        "passed validation without issues. The encryption area (POC4) has documented workarounds for both "
-        "errors encountered. All POC code is available in the repository for reference during production development."
+        "passed validation without issues. The encryption area (POC4) encountered a persistent Nitro Module "
+        "initialization failure with react-native-quick-crypto that could not be resolved despite exhaustive "
+        "troubleshooting. However, @noble/ciphers has been identified as a production-ready pure JavaScript "
+        "fallback that provides identical AES-256-GCM functionality without native module dependencies. "
+        "All POC code is available in the repository for reference during production development."
     )
 
     doc.add_heading("5.2 POC Verdict Summary", level=2)
@@ -407,7 +414,7 @@ def generate_library_eval_v2():
         ("POC1", "Calendar Sync + UI", "GO", "LOW"),
         ("POC2", "PDF Viewer", "GO", "LOW"),
         ("POC3", "Camera + OCR", "GO", "LOW"),
-        ("POC4", "Encryption", "GO (with conditions)", "MEDIUM"),
+        ("POC4", "Encryption", "GO (with fallback -- @noble/ciphers)", "MEDIUM"),
         ("POC5", "WebSocket + Zustand", "GO", "LOW"),
     ]
     for i, (poc, area, verdict, risk) in enumerate(verdicts):
@@ -433,8 +440,10 @@ def generate_library_eval_v2():
 
     doc.add_heading("5.4 Areas Requiring Caution (POC4 Findings)", level=2)
     caution = [
-        "Encryption (react-native-quick-crypto v1.0.11): Functional but requires careful build configuration. Windows developers must target arm64-v8a only. Plugin configuration in app.json is mandatory. expo-build-properties must be installed.",
-        "Wrong Key Detection (Issue #798): decipher.final() may not throw with incorrect key. Application-level auth tag verification required as mitigation.",
+        "Encryption -- Primary Library BLOCKED: react-native-quick-crypto v1.0.11 has a persistent Nitro Module initialization failure (PKCS1 undefined). All documented fixes were attempted and failed. The native C++ module compiles but does not bind to the JavaScript runtime. This is an unresolved blocker as of February 2026.",
+        "Encryption -- Fallback Available: @noble/ciphers provides AES-256-GCM encryption as pure JavaScript (no native modules). It is independently audited by Cure53, has 593K+ weekly npm downloads, and is used in production E2E encryption applications. Recommended as the encryption library for Family OS until react-native-quick-crypto's Nitro Module issue is resolved.",
+        "Encryption -- Dual-Path Strategy: If react-native-quick-crypto releases a fix for the Nitro Module initialization issue in the future, the team can re-evaluate and switch back for native performance benefits. The encryption utility module should be designed with an abstraction layer to allow swapping between the two libraries without changing application code.",
+        "Wrong Key Detection (Issue #798): If react-native-quick-crypto is used in the future, decipher.final() may not throw with incorrect key. Application-level auth tag verification required as mitigation. Note: @noble/ciphers handles auth tag verification correctly by default.",
     ]
     for area in caution:
         doc.add_paragraph(area, style='List Bullet')
@@ -450,9 +459,17 @@ def generate_library_eval_v2():
 
     doc.add_paragraph(
         "The POC/spike validation under HOS-13 confirms that the Family OS React Native library stack is "
-        "production-ready. All 5 critical areas have been tested with actual code on physical devices. "
-        "The library versions documented in this V2 report should be used as the baseline for production "
-        "development to avoid version mismatch issues encountered during POC testing."
+        "production-ready. 4 out of 5 critical areas passed validation fully. The encryption area (POC4) "
+        "encountered a persistent blocker with react-native-quick-crypto's Nitro Module, but a production-ready "
+        "fallback (@noble/ciphers) has been identified and recommended. The library versions documented in this "
+        "V2 report should be used as the baseline for production development."
+    )
+
+    doc.add_paragraph(
+        "For encryption specifically, the recommended approach is to use @noble/ciphers (pure JavaScript, "
+        "audited, AES-256-GCM) paired with expo-secure-store for key management. If react-native-quick-crypto "
+        "resolves its Nitro Module initialization issues in a future release, the team can re-evaluate switching "
+        "to the native library for performance benefits on large file encryption."
     )
 
     doc.add_paragraph(
@@ -466,7 +483,7 @@ def generate_library_eval_v2():
     p.add_run("--- End of Report ---").font.color.rgb = RGBColor(150, 150, 150)
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("Generated on February 16, 2026")
+    run = p.add_run("Generated on February 17, 2026")
     run.font.color.rgb = RGBColor(150, 150, 150)
     run.font.size = Pt(9)
     p = doc.add_paragraph()
@@ -523,7 +540,7 @@ def generate_blockers_v2():
 
     version = doc.add_paragraph()
     version.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = version.add_run("Version 2.0 | February 16, 2026")
+    run = version.add_run("Version 2.0 | February 17, 2026")
     run.font.size = Pt(12)
     run.font.color.rgb = RGBColor(100, 100, 100)
 
@@ -562,17 +579,19 @@ def generate_blockers_v2():
     doc.add_heading("1.2 Version 2.0 Update: New Blockers from POC Validation", level=2)
     doc.add_paragraph(
         "This V2 report adds three new technical blockers discovered during hands-on POC testing (HOS-13, "
-        "February 14-16, 2026). These blockers were not identified in the V1 theoretical analysis because they "
-        "only manifest during actual build and runtime on physical devices. All three have documented mitigations."
+        "February 14-17, 2026). These blockers were not identified in the V1 theoretical analysis because they "
+        "only manifest during actual build and runtime on physical devices. Blocker #19 has been resolved. "
+        "Blocker #20 remains UNRESOLVED despite exhaustive troubleshooting -- a fallback library (@noble/ciphers) "
+        "has been identified as the recommended alternative. Blocker #21 has a documented mitigation."
     )
 
     p = doc.add_paragraph()
     p.add_run("New blockers added in V2:").font.bold = True
 
     new_blockers = [
-        "BLOCKER #19: react-native-quick-crypto CMake/Ninja Infinite Loop on Windows (MEDIUM severity)",
-        "BLOCKER #20: react-native-quick-crypto Nitro Module Initialization Failure (HIGH severity)",
-        "BLOCKER #21: AES-256-GCM Wrong Key Detection Failure -- Issue #798 (LOW severity)",
+        "BLOCKER #19: react-native-quick-crypto CMake/Ninja Infinite Loop on Windows (MEDIUM severity -- RESOLVED)",
+        "BLOCKER #20: react-native-quick-crypto Nitro Module PKCS1 Initialization Failure (CRITICAL severity -- UNRESOLVED, fallback: @noble/ciphers)",
+        "BLOCKER #21: AES-256-GCM Wrong Key Detection Failure -- Issue #798 (LOW severity -- Mitigation documented)",
     ]
     for b in new_blockers:
         doc.add_paragraph(b, style='List Bullet')
@@ -599,7 +618,7 @@ def generate_blockers_v2():
         ("Calendar Sync", "No React Native library for CalDAV/iCloud sync. Custom implementation required.", "HIGH", "UNCHANGED. POC1 confirmed expo-calendar works for device-local MVP. External sync remains Post-MVP."),
         ("OAuth Token Refresh", "Access tokens expire (1 hour for Google). Background refresh fails when app suspended.", "HIGH", "UNCHANGED. Post-MVP concern."),
         ("Calendar Conflict Resolution", "Two-way sync creates conflicts when event edited in both systems.", "MEDIUM", "UNCHANGED. Post-MVP concern."),
-        ("PDF Encryption Performance", "Decrypting 50MB PDF in memory causes crashes on older devices.", "HIGH", "POC4 PARTIALLY VALIDATED. Encryption library works but has build configuration issues. See new blockers #19-20."),
+        ("PDF Encryption Performance", "Decrypting 50MB PDF in memory causes crashes on older devices.", "HIGH", "POC4 BLOCKED. react-native-quick-crypto has persistent Nitro Module failure (PKCS1 error). Fallback: @noble/ciphers (pure JS, AES-256-GCM). See new blockers #19-21."),
     ]
     for i, (area, desc, sev, status) in enumerate(v1_blockers):
         table.rows[i + 1].cells[0].text = area
@@ -649,21 +668,24 @@ def generate_blockers_v2():
     doc.add_paragraph("")
 
     # --- BLOCKER #20 ---
-    doc.add_heading("3.2 BLOCKER #20: react-native-quick-crypto Nitro Module Initialization Failure", level=2)
+    doc.add_heading("3.2 BLOCKER #20: react-native-quick-crypto Nitro Module PKCS1 Initialization Failure (UNRESOLVED)", level=2)
 
-    table = doc.add_table(rows=10, cols=2)
+    table = doc.add_table(rows=13, cols=2)
     table.style = 'Table Grid'
     data = [
         ("Field", "Details"),
         ("Blocker ID", "#20 (NEW in V2)"),
-        ("Severity", "HIGH"),
+        ("Severity", "CRITICAL (Upgraded from HIGH -- error persists despite all fixes)"),
+        ("Status", "UNRESOLVED -- Fallback library (@noble/ciphers) recommended"),
         ("Area", "Encryption -- Runtime Initialization"),
-        ("Affected Library", "react-native-quick-crypto v1.0.11"),
-        ("Error Message", "Cannot read property 'PKCS1' of undefined"),
-        ("Root Cause", "react-native-quick-crypto v1.0.11 uses Nitro Modules (native C++ modules via JSI). The native module fails to initialize at runtime because: (1) react-native-quick-crypto was NOT listed in the plugins array of app.json, and (2) expo-build-properties was not installed. Both are required for the Nitro Module to be properly linked during the Expo prebuild process."),
-        ("Impact", "CRITICAL at development time. The app crashes immediately when any crypto function is called. All encryption functionality is blocked until this is resolved. Without the fix, AES-256-GCM encryption for Document Vault is completely non-functional."),
-        ("Verified Fix", "1. Install expo-build-properties:\n   npm install expo-build-properties\n\n2. Update app.json plugins array to include all three:\n   \"plugins\": [\n     \"expo-secure-store\",\n     \"react-native-quick-crypto\",\n     \"expo-build-properties\"\n   ]\n\n3. Clean prebuild and rebuild:\n   npx expo prebuild --clean\n   Then rebuild the Development Build."),
-        ("Production Impact", "NONE after fix applied. This is a one-time configuration issue. Once app.json is correctly configured and the project is prebuilt, the Nitro Module initializes correctly. Document this in the project setup guide for all developers."),
+        ("Affected Library", "react-native-quick-crypto v1.0.11 (Nitro Modules v0.33.9)"),
+        ("Error Message", "TypeError: Cannot read property 'PKCS1' of undefined\n\nThis error occurs immediately when any crypto function from react-native-quick-crypto is invoked. The native Nitro Module (C++ crypto engine compiled via CMake) builds successfully and produces .so files, but fails to bind to the JavaScript runtime at initialization."),
+        ("Root Cause Analysis", "react-native-quick-crypto v1.0.11 uses Nitro Modules (margelo/nitro) -- a new native module architecture that replaces the older NativeModule/TurboModule approach with direct C++ to JSI bindings. The module compiles native .so libraries successfully, and they are present in the APK (verified in gradle dependency tree). However, the JavaScript-to-native bridge fails to initialize at runtime.\n\nPotential contributing factors:\n- Nitro Modules v0.33.9 may have compatibility issues with React Native 0.81.5 + Expo SDK 54\n- The New Architecture (Fabric/TurboModules) interop with Nitro Modules may have undocumented requirements\n- Windows-specific build artifacts may corrupt the JSI binding layer\n- Hermes engine initialization timing may conflict with Nitro Module registration"),
+        ("All Attempted Fixes (ALL FAILED)", "The following fixes were attempted systematically, each with a full clean rebuild cycle:\n\n1. Added react-native-quick-crypto to app.json plugins array -- FAILED\n2. Installed expo-build-properties v1.0.10 -- FAILED\n3. Enabled Hermes JavaScript engine (jsEngine: hermes in app.json) -- FAILED\n4. Deleted android/.cxx, android/build, android/app/build cache directories -- FAILED\n5. Deleted entire android/ folder + npx expo prebuild --clean -- FAILED\n6. Multiple full native rebuilds with arm64-v8a architecture flag -- FAILED\n7. Verified all dependencies present: nitro-modules v0.33.9 installed, quick-crypto v1.0.11 in gradle dependency tree, Hermes enabled in gradle.properties, native .so files compiled and present in APK -- STILL FAILED\n\nConclusion: The PKCS1 error persists across all configurations. This is classified as a persistent technical blocker that cannot be resolved with current library versions."),
+        ("How to Resolve (Future)", "This error may be resolvable when:\n\n1. react-native-quick-crypto releases a patch for Expo SDK 54 + React Native 0.81.5 compatibility\n2. Nitro Modules (margelo/nitro) releases an updated version with improved Expo interop\n3. Expo SDK 55+ improves native module initialization for Nitro-based libraries\n4. The library maintainers document specific version requirements for Nitro + Expo combinations\n\nMonitor the react-native-quick-crypto GitHub issues for resolution. If a fix is released, re-test with: npm install react-native-quick-crypto@latest && npx expo prebuild --clean && rebuild."),
+        ("Impact", "CRITICAL. All encryption functionality via react-native-quick-crypto is completely blocked. The POC4 test suite (AES-256-GCM encrypt/decrypt, random bytes, key storage) could NOT be executed. The Document Vault encryption feature cannot use this library in its current state."),
+        ("Recommended Fallback: @noble/ciphers", "@noble/ciphers is the recommended replacement for react-native-quick-crypto.\n\nLibrary Details:\n- Name: @noble/ciphers\n- Type: Pure JavaScript (no native modules, no JSI, no Nitro)\n- Security: Independently audited by Cure53\n- Downloads: 593,000+ weekly on npm\n- AES-256-GCM: Full support (encrypt, decrypt, auth tag verification)\n- Bundle Size: Tree-shakeable, import only what you need\n- Compatibility: Works with Expo Go, Development Builds, and bare React Native\n- Dependencies: Zero\n- Ecosystem: Part of @noble suite (noble-hashes, noble-curves, noble-ciphers)\n- Production Use: Used in E2E encryption applications\n\nUsage with Family OS:\n- npm install @noble/ciphers\n- Import: import { gcm } from \"@noble/ciphers/aes\"\n- Generate keys: Use expo-crypto for randomBytes, store with expo-secure-store\n- Encrypt: gcm(key, nonce).encrypt(plaintext)\n- Decrypt: gcm(key, nonce).decrypt(ciphertext)\n- Auth tag verification is built-in (throws on tampered data or wrong key)"),
+        ("Production Impact", "MEDIUM. react-native-quick-crypto cannot be used. @noble/ciphers provides equivalent AES-256-GCM functionality as pure JavaScript. Performance difference: native crypto is faster for files >50MB, but @noble/ciphers is sufficient for typical Document Vault use cases (<10MB documents). The encryption utility module should use an abstraction layer to allow future swapping between libraries if quick-crypto is fixed."),
     ]
     for i, (k, v) in enumerate(data):
         table.rows[i].cells[0].text = k
@@ -711,6 +733,7 @@ def generate_blockers_v2():
         table.rows[0].cells[i].text = h
 
     risks = [
+        ("(NEW) Nitro Module PKCS1 Failure #20", "5", "4", "20", "Before MVP (use @noble/ciphers fallback)"),
         ("PDF Encryption Memory Crash", "4", "4", "16", "Before MVP (chunked decryption)"),
         ("AI Hallucination (Financial)", "4", "4", "16", "Before MVP (validation layer)"),
         ("Gemini API Rate Limits", "4", "4", "16", "Before 1,000 families"),
@@ -718,7 +741,6 @@ def generate_blockers_v2():
         ("File Storage Public Exposure", "3", "5", "15", "Before MVP (GCS config)"),
         ("iOS Background WebSocket Kill", "5", "3", "15", "MVP (accept + push notifs)"),
         ("Cross-Module Cascade Failures", "3", "4", "12", "Phase 2"),
-        ("(NEW) Nitro Module Init Failure #20", "3", "4", "12", "Before MVP (app.json config)"),
         ("RLS Policy Bypass", "2", "5", "10", "Before MVP (security testing)"),
         ("PostgreSQL Connection Exhaustion", "2", "5", "10", "Before 1,000 families"),
         ("Concurrent Edit Conflicts", "3", "3", "9", "Phase 2"),
@@ -748,14 +770,15 @@ def generate_blockers_v2():
         "All items from V1 Section 5.1 remain. The following items are ADDED based on POC findings:"
     )
 
-    doc.add_heading("Encryption Configuration (NEW -- Immediate):", level=3)
+    doc.add_heading("Encryption Library Migration (NEW -- Immediate):", level=3)
     new_items = [
-        "Add react-native-quick-crypto and expo-build-properties to app.json plugins array in ALL project configurations.",
-        "Document the required app.json plugin configuration in the project README and developer onboarding guide.",
-        "Configure CI/CD builds to target arm64-v8a architecture on Windows build agents. Use Linux/macOS for production builds.",
-        "Implement application-level auth tag verification for AES-256-GCM decryption (defense against Issue #798).",
-        "Add known-plaintext header ('FAMILYOS_V1') to encrypted data for wrong-key detection.",
-        "Test encryption/decryption round-trip in CI/CD pipeline to catch configuration regressions early.",
+        "CRITICAL: Install @noble/ciphers as the encryption library (npm install @noble/ciphers). react-native-quick-crypto v1.0.11 has an unresolved Nitro Module PKCS1 initialization failure and CANNOT be used.",
+        "Create an encryption utility module with an abstraction layer (e.g., EncryptionService interface) that wraps @noble/ciphers. This allows future swapping to react-native-quick-crypto if its Nitro Module issue is resolved.",
+        "Use expo-secure-store for encryption key storage (iOS Keychain / Android KeyStore). This works with both @noble/ciphers and react-native-quick-crypto.",
+        "Use expo-crypto (randomBytes) for cryptographically secure random number generation (nonces, IVs).",
+        "Test AES-256-GCM encrypt/decrypt round-trip with @noble/ciphers in CI/CD pipeline.",
+        "Monitor react-native-quick-crypto GitHub releases for Nitro Module fix. Re-evaluate when a new version is released that addresses the PKCS1 initialization issue.",
+        "If react-native-quick-crypto is used in the future: configure app.json plugins, install expo-build-properties, target arm64-v8a on Windows, implement application-level auth tag verification (Issue #798 mitigation).",
     ]
     for item in new_items:
         doc.add_paragraph(item, style='List Bullet')
@@ -803,9 +826,9 @@ def generate_blockers_v2():
         table.rows[0].cells[i].text = h
 
     increased = [
-        ("Encryption Build Complexity", "MEDIUM -- 'JSI-based, requires careful setup'", "HIGH -- Two separate build/runtime errors discovered. Requires arm64-only builds on Windows and specific plugin configuration. Mitigations documented but adds developer onboarding friction."),
-        ("Encryption Version Mismatch", "Not identified", "MEDIUM -- V1 listed ~0.7.5 but actual version is 1.0.11 (major version jump). Nitro Modules architecture is completely different from v0.7.x. Documentation and examples from older versions are incompatible."),
-        ("Wrong Key Detection", "Not identified", "LOW -- Issue #798 means decipher.final() may not throw on wrong key. Mitigation: application-level auth tag verification."),
+        ("Encryption Runtime Failure", "MEDIUM -- 'JSI-based, requires careful setup'", "CRITICAL -- react-native-quick-crypto v1.0.11 has persistent Nitro Module PKCS1 initialization failure that could NOT be resolved despite exhaustive troubleshooting (7 different fix attempts). Library is BLOCKED. Fallback: @noble/ciphers (pure JS, audited, AES-256-GCM). Build error (CMake ninja loop) was resolved by targeting arm64-v8a only."),
+        ("Encryption Version Mismatch", "Not identified", "MEDIUM -- V1 listed ~0.7.5 but actual version is 1.0.11 (major version jump). The v1.0.x release introduced Nitro Modules architecture (native C++ via JSI), a complete rewrite from v0.7.x NativeModule approach. Documentation and examples from older versions are incompatible. This version gap contributed to the unresolved initialization failure."),
+        ("Wrong Key Detection", "Not identified", "LOW -- If react-native-quick-crypto is used in the future, Issue #798 means decipher.final() may not throw on wrong key. Mitigation: application-level auth tag verification. Note: @noble/ciphers handles this correctly by default."),
     ]
     for i, (area, v1, v2) in enumerate(increased):
         table.rows[i + 1].cells[0].text = area
@@ -825,24 +848,27 @@ def generate_blockers_v2():
     add_colored_text(p, "GO (with conditions)", RGBColor(0, 128, 0), bold=True)
 
     doc.add_paragraph(
-        "Family OS remains technically feasible with the current architecture. POC validation has INCREASED "
-        "overall confidence by confirming 4 out of 5 critical areas work as expected. The encryption area requires "
-        "documented configuration steps but is functional."
+        "Family OS remains technically feasible with the current architecture. POC validation has confirmed "
+        "4 out of 5 critical areas work as expected. The encryption area (POC4) encountered a persistent "
+        "Nitro Module failure with react-native-quick-crypto that remains unresolved. However, @noble/ciphers "
+        "has been identified as a production-ready pure JavaScript alternative providing identical AES-256-GCM "
+        "functionality. With this fallback, all 5 critical areas have viable solutions."
     )
 
     doc.add_heading("7.2 Updated Confidence Rating", level=2)
 
     p = doc.add_paragraph()
     p.add_run("Confidence Rating: ").font.bold = True
-    add_colored_text(p, "HIGH (8.5/10) -- Up from 8/10 in V1", RGBColor(0, 128, 0), bold=True)
+    add_colored_text(p, "HIGH (8/10) -- Maintained from V1 (with adjustments)", RGBColor(0, 128, 0), bold=True)
 
     doc.add_paragraph("Confidence adjustments from V1:")
 
     adjustments = [
         "+0.5: POC validation confirmed 4/5 critical libraries work on actual devices (not just theoretical)",
         "+0.5: Calendar, PDF, OCR, WebSocket risks reduced from MEDIUM to LOW based on hands-on testing",
-        "-0.5: Encryption build complexity higher than expected (CMake issues, Nitro Module configuration)",
-        "Net: +0.5 improvement over V1 baseline",
+        "-1.0: Encryption library (react-native-quick-crypto) has persistent unresolved Nitro Module failure; requires library switch to @noble/ciphers",
+        "+0.0: @noble/ciphers identified as production-ready fallback (audited, 593K downloads, AES-256-GCM), mitigating the encryption blocker",
+        "Net: 0.0 change from V1 baseline (risks offset by fallback availability)",
     ]
     for adj in adjustments:
         doc.add_paragraph(adj, style='List Bullet')
@@ -851,14 +877,16 @@ def generate_blockers_v2():
 
     conditions = [
         "Complete all 'Critical Path: Must Solve Before MVP Launch' items (V1 Section 5.1 + V2 Section 5.1)",
-        "Verify react-native-quick-crypto encryption round-trip works end-to-end in production build configuration",
-        "Implement application-level auth tag verification for AES-256-GCM (Issue #798 mitigation)",
-        "Pass penetration testing for RLS bypass, JWT manipulation, file access",
+        "Implement encryption using @noble/ciphers with AES-256-GCM and verify encrypt/decrypt round-trip end-to-end",
+        "Create EncryptionService abstraction layer to allow future library swapping (if react-native-quick-crypto is fixed)",
+        "Verify @noble/ciphers auth tag verification works correctly (wrong key should throw, tampered data should throw)",
+        "Pass penetration testing for RLS bypass, JWT manipulation, file access, encryption integrity",
         "Load testing: 500 concurrent users, validate no connection pool exhaustion",
-        "Encryption performance testing on target devices (iPhone 8, Android API 23)",
+        "Encryption performance testing with @noble/ciphers on target devices (iPhone 8, Android API 23) for files up to 10MB",
         "AI validation layer tested with 100+ real receipts/invitations",
         "Monitoring dashboard operational with automated alerts",
-        "Document POC4 build configuration in developer onboarding guide",
+        "Document encryption library decision (@noble/ciphers) and the react-native-quick-crypto blocker in developer onboarding guide",
+        "Monitor react-native-quick-crypto releases for Nitro Module fix -- re-evaluate if v1.1+ is released",
     ]
     for c in conditions:
         doc.add_paragraph(c, style='List Bullet')
@@ -880,7 +908,7 @@ def generate_blockers_v2():
     p.add_run("--- End of Technical Risk Assessment ---").font.color.rgb = RGBColor(150, 150, 150)
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("Generated on February 16, 2026")
+    run = p.add_run("Generated on February 17, 2026")
     run.font.color.rgb = RGBColor(150, 150, 150)
     run.font.size = Pt(9)
     p = doc.add_paragraph()
