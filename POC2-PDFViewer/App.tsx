@@ -124,6 +124,7 @@ export default function App() {
 
           {/* PDF */}
           <Pdf
+            trustAllCerts={false}
             source={{ uri: selectedPdf.url }}
             style={styles.pdf}
             onLoadComplete={(numberOfPages: number, filePath: string) => {
@@ -155,6 +156,7 @@ export default function App() {
           </View>
           {selectedPdf && (
             <Pdf
+              trustAllCerts={false}
               source={{ uri: selectedPdf.url }}
               style={styles.pdf}
               onLoadComplete={(pages: number) => addLog(`Modal loaded: ${pages} pages`)}
