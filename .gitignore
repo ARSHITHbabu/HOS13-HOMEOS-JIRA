@@ -1,0 +1,71 @@
+# ============================================
+# HOS-13 POC/Spike Validation - Root .gitignore
+# ============================================
+
+# --- Node / npm ---
+node_modules/
+package-lock.json
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+yarn.lock
+
+# --- Expo ---
+.expo/
+dist/
+web-build/
+
+# --- Native build outputs (generated via expo prebuild) ---
+**/android/
+**/ios/
+
+# --- Metro bundler ---
+.metro-health-check*
+
+# --- Native signing keys & certs ---
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# --- TypeScript ---
+*.tsbuildinfo
+
+# --- Environment / secrets ---
+.env
+.env.*
+.env*.local
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# --- Word temp files (open documents) ---
+~$*.docx
+~$*.doc
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Build artifacts ---
+*.apk
+*.aab
+*.ipa
+*.hbc
+
+# --- Extracted images (from task docs - not needed in repo) ---
+extracted_images/
